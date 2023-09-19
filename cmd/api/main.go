@@ -39,28 +39,15 @@ func main() {
 
 }
 
+// serve starts the HTTP server
 func (app *application) serve() error {
-	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		var payload struct {
-			Okay    bool   `json:"okay"`
-			Message string `json:"message"`
-		}
 
-		payload.Okay = true
-		payload.Message = "Hello World"
+	app.infoLog.Println("Starting server on port:", app.config.port)
 
-		out, err := json.MarshalIndent(payload, "", "\t")
+	srv := &http.Server{
+		Addr:    fmt.Sprintf(":%d", app.config.port),
+		Handler: app.routes(),
+	}
 
-		if err != nil {
-			app.errorLog.Println(err)
-		}
-
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusOK)
-		w.Write(out)
-	})
-
-	app.infoLog.Println("Starting server on port", app.config.port)
-
-	return http.ListenAndServe(fmt.Sprintf(":%d", app.config.port), nil)
+	return srv.ListenAndServe()
 }
