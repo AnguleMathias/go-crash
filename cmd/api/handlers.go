@@ -1,7 +1,6 @@
 package main
 
 import (
-	"encoding/json"
 	"net/http"
 )
 
@@ -10,6 +9,7 @@ type jsonResponse struct {
 	Message string `json:"message"`
 }
 
+// Login is the handler used to attemt to log a user into the api
 func (app *application) Login(w http.ResponseWriter, r *http.Request) {
 	type credentials struct {
 		UserName string `json:"email"`
@@ -20,23 +20,14 @@ func (app *application) Login(w http.ResponseWriter, r *http.Request) {
 
 	var payload jsonResponse
 
-	err := json.NewDecoder(r.Body).Decode(&creds)
+	err := app.readJSON(w, r, &creds)
 
 	if err != nil {
-		// send error back
-		app.errorLog.Println("invalid json")
+		app.errorLog.Println(err)
 		payload.Error = true
 		payload.Message = "Invalid JSON"
 
-		out, err := json.MarshalIndent(payload, "", "\t")
-
-		if err != nil {
-			app.errorLog.Println(err)
-		}
-
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusOK)
-		w.Write(out)
+		_ = app.writeJSON(w, http.StatusBadRequest, payload, http.Header{})
 		return
 	}
 
@@ -47,13 +38,11 @@ func (app *application) Login(w http.ResponseWriter, r *http.Request) {
 	payload.Error = false
 	payload.Message = "Login Successful"
 
-	out, err := json.MarshalIndent(payload, "", "\t")
+	// out, err := json.MarshalIndent(payload, "", "\t")
+	err = app.writeJSON(w, http.StatusOK, payload)
 
 	if err != nil {
 		app.errorLog.Println(err)
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	w.Write(out)
 }
